@@ -17,6 +17,3 @@ export const booleanFeatureFlag = (...args: Parameters<typeof String.raw>) => {
 
   return !!featureFlags?.[name]?.value;
 };
-
-export const isImprovedPrefetchingEnabled = () =>
-  booleanFeatureFlag`jfp.rrr-improved-prefetching`;

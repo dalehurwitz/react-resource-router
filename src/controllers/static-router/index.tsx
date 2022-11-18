@@ -3,7 +3,7 @@ import React from 'react';
 import { createMemoryHistory } from 'history';
 
 import { createLocation } from '../../common/utils/create-location';
-import { isImprovedPrefetchingEnabled } from '../../common/utils/feature-flagging';
+import { booleanFeatureFlag } from '../../common/utils/feature-flagging';
 import { MemoryRouterProps } from '../../common/types';
 import { MemoryRouter } from '../memory-router';
 import { getResourceStore } from '../resource-store';
@@ -39,7 +39,7 @@ export const StaticRouter = ({
  */
 StaticRouter.requestResources = async (props: RequestResourcesParams) => {
   console.log(
-    `react-resource-router: jfp.rrr-improved-prefetching=${isImprovedPrefetchingEnabled()}`
+    `react-resource-router: jfp.rrr-improved-prefetching=${booleanFeatureFlag`jfp.rrr-improved-prefetching`}`
   );
 
   const { bootstrapStore, requestRouteResources } = getRouterStore().actions;

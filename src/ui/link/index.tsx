@@ -12,7 +12,7 @@ import {
 } from 'react';
 
 import { LinkProps, Route } from '../../common/types';
-import { useTimeout, isImprovedPrefetchingEnabled } from '../../common/utils';
+import { useTimeout, booleanFeatureFlag } from '../../common/utils';
 import {
   createRouterContext,
   generateLocationFromPath,
@@ -21,9 +21,16 @@ import { useRouterStoreStatic } from '../../controllers/router-store';
 
 import { getValidLinkType, handleNavigation } from './utils';
 
-const improvedPrefetchingIsEnabled = isImprovedPrefetchingEnabled();
+const PREFETCH_DELAY_OLD = 300;
+const PREFETCH_DELAY = 225;
 
-const PREFETCH_DELAY = improvedPrefetchingIsEnabled ? 225 : 300;
+const getPrefetchDelay = () => {
+  if (booleanFeatureFlag`jfp.rrr-improved-prefetching`) {
+    return PREFETCH_DELAY;
+  }
+
+  return PREFETCH_DELAY_OLD;
+};
 
 const Link = forwardRef<HTMLButtonElement | HTMLAnchorElement, LinkProps>(
   (
@@ -49,7 +56,7 @@ const Link = forwardRef<HTMLButtonElement | HTMLAnchorElement, LinkProps>(
   ) => {
     const routerActions = useRouterStoreStatic()[1];
     const prefetchRef = useRef<NodeJS.Timeout>();
-    const { schedule, cancel } = useTimeout(PREFETCH_DELAY);
+    const { schedule, cancel } = useTimeout(getPrefetchDelay());
 
     const validLinkType = getValidLinkType(linkType);
     const [route, setRoute] = useState<Route | void>(() => {
@@ -90,7 +97,7 @@ const Link = forwardRef<HTMLButtonElement | HTMLAnchorElement, LinkProps>(
     }, [route, linkDestination, routerActions]);
 
     useEffect(() => {
-      if (improvedPrefetchingIsEnabled) {
+      if (booleanFeatureFlag`jfp.rrr-improved-prefetching`) {
         if (prefetch === 'mount') {
           schedule(triggerPrefetch);
         }
@@ -100,7 +107,7 @@ const Link = forwardRef<HTMLButtonElement | HTMLAnchorElement, LinkProps>(
 
       let timeout: NodeJS.Timeout;
       if (prefetch === 'mount')
-        timeout = setTimeout(triggerPrefetch, PREFETCH_DELAY);
+        timeout = setTimeout(triggerPrefetch, getPrefetchDelay());
 
       return () => clearTimeout(timeout);
     }, [prefetch, schedule, cancel, triggerPrefetch]);
@@ -117,17 +124,20 @@ const Link = forwardRef<HTMLButtonElement | HTMLAnchorElement, LinkProps>(
 
     const handleMouseEnter = (e: MouseEvent) => {
       if (prefetch === 'hover') {
-        if (improvedPrefetchingIsEnabled) {
+        if (booleanFeatureFlag`jfp.rrr-improved-prefetching`) {
           schedule(triggerPrefetch);
         } else {
-          prefetchRef.current = setTimeout(triggerPrefetch, PREFETCH_DELAY);
+          prefetchRef.current = setTimeout(triggerPrefetch, getPrefetchDelay());
         }
       }
       onMouseEnter && onMouseEnter(e);
     };
 
     const handleMouseLeave = (e: MouseEvent) => {
-      if (improvedPrefetchingIsEnabled && prefetch === 'hover') {
+      if (
+        booleanFeatureFlag`jfp.rrr-improved-prefetching` &&
+        prefetch === 'hover'
+      ) {
         cancel();
       } else if (prefetch === 'hover' && prefetchRef.current) {
         clearTimeout(prefetchRef.current);
@@ -168,7 +178,7 @@ const Link = forwardRef<HTMLButtonElement | HTMLAnchorElement, LinkProps>(
         onKeyDown: handleLinkPress,
         onMouseEnter: handleMouseEnter,
         onMouseLeave: handleMouseLeave,
-        ...(improvedPrefetchingIsEnabled
+        ...(booleanFeatureFlag`jfp.rrr-improved-prefetching`
           ? {
               onFocus: handleFocus,
               onBlur: handleBlur,
