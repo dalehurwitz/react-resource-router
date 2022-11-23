@@ -184,7 +184,11 @@ const Link = forwardRef<HTMLButtonElement | HTMLAnchorElement, LinkProps>(
               onBlur: handleBlur,
               onPointerDown: handlePointerDown,
             }
-          : undefined),
+          : {
+              onFocus,
+              onBlur,
+              onPointerDown,
+            }),
         ref,
       },
       children
